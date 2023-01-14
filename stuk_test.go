@@ -34,3 +34,35 @@ func BenchmarkNewCase2(b *testing.B) {
 		c.Set(i, i)
 	}
 }
+
+func TestCase3(t *testing.T) {
+	c := New(time.Second * 3)
+	c.Set(1, 2)
+	c.Set(2, 5)
+	fmt.Println(c.Get(1), c.Get(2))
+
+	select {
+	case <-time.After(time.Second):
+	}
+	fmt.Println(c.Get(1), c.Pull(2))
+
+	select {
+	case <-time.After(time.Second):
+	}
+	fmt.Println(c.Get(1), c.Pull(2))
+
+	select {
+	case <-time.After(time.Second):
+	}
+	fmt.Println(c.Get(1), c.Pull(2))
+
+	select {
+	case <-time.After(time.Second):
+	}
+	fmt.Println(c.Get(1), c.Pull(2))
+
+	select {
+	case <-time.After(time.Second):
+	}
+	fmt.Println(c.Get(1), c.Pull(2))
+}

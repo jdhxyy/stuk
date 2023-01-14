@@ -15,7 +15,7 @@ import (
 )
 
 type tItemMap struct {
-	object any
+	object   any
 	itemList *list.Element
 }
 
@@ -26,10 +26,10 @@ type tItemList struct {
 }
 
 type tCache struct {
-	items map[uint64]*tItemMap
+	items    map[uint64]*tItemMap
 	timeList *list.List
-	lock sync.RWMutex
-	expire time.Duration
+	lock     sync.RWMutex
+	expire   time.Duration
 }
 
 type Cache struct {
@@ -93,7 +93,7 @@ func (c *tCache) Set(k uint64, v any) {
 		item.expire = time.Now().Add(c.expire).UnixNano()
 
 		c.items[k] = &tItemMap{
-			object: v,
+			object:   v,
 			itemList: c.timeList.PushFront(&item),
 		}
 	} else {
@@ -111,6 +111,23 @@ func (c *tCache) Get(k uint64) any {
 	if ok == false {
 		return nil
 	}
+	return value.object
+}
+
+// Pull 读取键值对并刷新过期时间.返回nil表示读取失败
+func (c *tCache) Pull(k uint64) any {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	value, ok := c.items[k]
+	if ok == false {
+		return nil
+	}
+
+	itemList := value.itemList.Value.(*tItemList)
+	itemList.expire = time.Now().Add(c.expire).UnixNano()
+
+	c.timeList.MoveToFront(value.itemList)
 	return value.object
 }
 
