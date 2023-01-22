@@ -9,7 +9,6 @@ package stuk
 
 import (
 	"container/list"
-	"fmt"
 	"sync"
 	"time"
 )
@@ -72,7 +71,6 @@ func checkList(c *tCache) {
 
 		item = node.Value.(*tItemList)
 		if now > item.expire {
-			fmt.Println("delete", item.key)
 			delete(c.items, item.key)
 			c.timeList.Remove(node)
 		}
