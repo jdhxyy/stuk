@@ -24,11 +24,15 @@ type tItemList struct {
 	expire int64
 }
 
+// TimeoutCallback 超时回调函数
+type TimeoutCallback func(k uint64, v any)
+
 type tCache struct {
-	items    map[uint64]*tItemMap
-	timeList *list.List
-	lock     sync.RWMutex
-	expire   time.Duration
+	items           map[uint64]*tItemMap
+	timeList        *list.List
+	lock            sync.RWMutex
+	expire          time.Duration
+	timeoutCallback TimeoutCallback
 }
 
 type Cache struct {
@@ -36,11 +40,12 @@ type Cache struct {
 }
 
 // New 新建map
-func New(expire time.Duration) *Cache {
+func New(expire time.Duration, timeoutCallback TimeoutCallback) *Cache {
 	var c tCache
 	c.expire = expire
 	c.items = make(map[uint64]*tItemMap)
 	c.timeList = new(list.List)
+	c.timeoutCallback = timeoutCallback
 
 	var C Cache
 	C.tCache = &c
@@ -54,7 +59,9 @@ func checkExpire(c *tCache) {
 		case <-time.After(time.Second):
 		}
 
+		c.lock.Lock()
 		checkList(c)
+		c.lock.Unlock()
 	}
 }
 
@@ -71,8 +78,16 @@ func checkList(c *tCache) {
 
 		item = node.Value.(*tItemList)
 		if now > item.expire {
+			var value *tItemMap = nil
+			if c.timeoutCallback != nil {
+				value, _ = c.items[item.key]
+			}
+
 			delete(c.items, item.key)
 			c.timeList.Remove(node)
+			if c.timeoutCallback != nil && value != nil {
+				c.timeoutCallback(item.key, value.object)
+			}
 		}
 
 		node = nodeNext
